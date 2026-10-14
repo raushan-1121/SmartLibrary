@@ -1,0 +1,248 @@
+-- ============================================================================
+-- SmartLib Library Management System
+-- Baseline PostgreSQL Database Schema Documentation
+-- ============================================================================
+-- SAFETY NOTICE:
+-- THIS FILE IS STRICTLY FOR ARCHITECTURAL DOCUMENTATION AND REFERENCE.
+-- IT CONTAINS NO EXECUTABLE DDL STATEMENTS (NO CREATE, ALTER, OR DROP).
+-- DO NOT EXECUTE THIS FILE AS A DATABASE MIGRATION SCRIPT.
+--
+-- Verified via PostgreSQL system catalogs (information_schema, pg_constraint,
+-- pg_indexes) against the live SmartLib database.
+-- ============================================================================
+
+-- ============================================================================
+-- 1. TABLE: users
+-- ============================================================================
+-- Description: Stores authentication credentials and role assignments for students and administrators.
+--
+-- Columns:
+--   - id            : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('users_id_seq'::regclass)
+--   - name          : character varying(100) | NOT NULL | DEFAULT: NULL
+--   - email         : character varying(150) | NOT NULL | UNIQUE | DEFAULT: NULL
+--   - password_hash : text | NOT NULL | DEFAULT: NULL
+--   - role          : character varying(20) | NOT NULL | DEFAULT: 'STUDENT'::character varying
+--   - created_at    : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - users_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - users_email_key: UNIQUE (email)
+--
+-- Foreign Keys:
+--   - None
+--
+-- Indexes:
+--   - users_pkey (btree, id, UNIQUE)
+--   - users_email_key (btree, email, UNIQUE)
+
+
+-- ============================================================================
+-- 2. TABLE: authors
+-- ============================================================================
+-- Description: Stores literary authors associated with library books.
+--
+-- Columns:
+--   - id         : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('authors_id_seq'::regclass)
+--   - name       : character varying(150) | NOT NULL | DEFAULT: NULL
+--   - bio        : text | NULL | DEFAULT: NULL
+--   - created_at : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - authors_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - None
+--
+-- Foreign Keys:
+--   - None
+--
+-- Indexes:
+--   - authors_pkey (btree, id, UNIQUE)
+
+
+-- ============================================================================
+-- 3. TABLE: categories
+-- ============================================================================
+-- Description: Classification categories and subjects for library catalog organization.
+--
+-- Columns:
+--   - id          : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('categories_id_seq'::regclass)
+--   - name        : character varying(100) | NOT NULL | UNIQUE | DEFAULT: NULL
+--   - description : text | NULL | DEFAULT: NULL
+--   - created_at  : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - categories_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - categories_name_key: UNIQUE (name)
+--
+-- Foreign Keys:
+--   - None
+--
+-- Indexes:
+--   - categories_pkey (btree, id, UNIQUE)
+--   - categories_name_key (btree, name, UNIQUE)
+
+
+-- ============================================================================
+-- 4. TABLE: books
+-- ============================================================================
+-- Description: Master catalog entries for book titles, metadata, and classifications.
+--
+-- Columns:
+--   - id               : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('books_id_seq'::regclass)
+--   - title            : character varying(200) | NOT NULL | DEFAULT: NULL
+--   - isbn             : character varying(20) | NULL | UNIQUE | DEFAULT: NULL
+--   - author_id        : integer | NULL | DEFAULT: NULL
+--   - category_id      : integer | NULL | DEFAULT: NULL
+--   - publisher        : character varying(150) | NULL | DEFAULT: NULL
+--   - publication_year : integer | NULL | DEFAULT: NULL
+--   - edition          : character varying(50) | NULL | DEFAULT: NULL
+--   - description      : text | NULL | DEFAULT: NULL
+--   - created_at       : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - books_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - books_isbn_key: UNIQUE (isbn)
+--
+-- Foreign Keys:
+--   - books_author_id_fkey:
+--       FOREIGN KEY (author_id) REFERENCES authors(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--   - books_category_id_fkey:
+--       FOREIGN KEY (category_id) REFERENCES categories(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--
+-- Indexes:
+--   - books_pkey (btree, id, UNIQUE)
+--   - books_isbn_key (btree, isbn, UNIQUE)
+
+
+-- ============================================================================
+-- 5. TABLE: book_copies
+-- ============================================================================
+-- Description: Individual physical copies/items corresponding to cataloged book titles.
+--
+-- Columns:
+--   - id               : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('book_copies_id_seq'::regclass)
+--   - book_id          : integer | NOT NULL | DEFAULT: NULL
+--   - accession_number : character varying(50) | NOT NULL | UNIQUE | DEFAULT: NULL
+--   - barcode          : character varying(100) | NULL | UNIQUE | DEFAULT: NULL
+--   - status           : character varying(20) | NOT NULL | DEFAULT: 'AVAILABLE'::character varying
+--   - location         : character varying(100) | NULL | DEFAULT: NULL
+--   - added_at         : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - book_copies_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - book_copies_accession_number_key: UNIQUE (accession_number)
+--   - book_copies_barcode_key: UNIQUE (barcode)
+--
+-- Foreign Keys:
+--   - book_copies_book_id_fkey:
+--       FOREIGN KEY (book_id) REFERENCES books(id)
+--       ON UPDATE NO ACTION | ON DELETE CASCADE
+--
+-- Indexes:
+--   - book_copies_pkey (btree, id, UNIQUE)
+--   - book_copies_accession_number_key (btree, accession_number, UNIQUE)
+--   - book_copies_barcode_key (btree, barcode, UNIQUE)
+
+
+-- ============================================================================
+-- 6. TABLE: borrow_transactions
+-- ============================================================================
+-- Description: Circulation records tracking book copy lending, due dates, and returns.
+--
+-- Columns:
+--   - id          : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('borrow_transactions_id_seq'::regclass)
+--   - user_id     : integer | NOT NULL | DEFAULT: NULL
+--   - copy_id     : integer | NOT NULL | DEFAULT: NULL
+--   - issue_date  : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--   - due_date    : timestamp without time zone | NOT NULL | DEFAULT: NULL
+--   - return_date : timestamp without time zone | NULL | DEFAULT: NULL
+--   - status      : character varying(20) | NOT NULL | DEFAULT: 'ISSUED'::character varying
+--   - created_at  : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - borrow_transactions_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - None
+--
+-- Foreign Keys:
+--   - borrow_transactions_user_id_fkey:
+--       FOREIGN KEY (user_id) REFERENCES users(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--   - borrow_transactions_copy_id_fkey:
+--       FOREIGN KEY (copy_id) REFERENCES book_copies(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--
+-- Indexes:
+--   - borrow_transactions_pkey (btree, id, UNIQUE)
+
+
+-- ============================================================================
+-- 7. TABLE: reservations
+-- ============================================================================
+-- Description: User holds and book reservation queues.
+--
+-- Columns:
+--   - id           : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('reservations_id_seq'::regclass)
+--   - user_id      : integer | NOT NULL | DEFAULT: NULL
+--   - book_id      : integer | NOT NULL | DEFAULT: NULL
+--   - reserved_at  : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--   - status       : character varying(20) | NOT NULL | DEFAULT: 'ACTIVE'::character varying
+--   - fulfilled_at : timestamp without time zone | NULL | DEFAULT: NULL
+--
+-- Primary Key:
+--   - reservations_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - None
+--
+-- Foreign Keys:
+--   - reservations_user_id_fkey:
+--       FOREIGN KEY (user_id) REFERENCES users(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--   - reservations_book_id_fkey:
+--       FOREIGN KEY (book_id) REFERENCES books(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--
+-- Indexes:
+--   - reservations_pkey (btree, id, UNIQUE)
+
+
+-- ============================================================================
+-- 8. TABLE: fines
+-- ============================================================================
+-- Description: Overdue fee and penalty assessment records associated with borrow transactions.
+--
+-- Columns:
+--   - id             : integer | NOT NULL | PRIMARY KEY | DEFAULT: nextval('fines_id_seq'::regclass)
+--   - transaction_id : integer | NOT NULL | DEFAULT: NULL
+--   - amount         : numeric | NOT NULL | DEFAULT: 0
+--   - reason         : character varying(255) | NULL | DEFAULT: NULL
+--   - status         : character varying(20) | NOT NULL | DEFAULT: 'PENDING'::character varying
+--   - paid_at        : timestamp without time zone | NULL | DEFAULT: NULL
+--   - created_at     : timestamp without time zone | NULL | DEFAULT: CURRENT_TIMESTAMP
+--
+-- Primary Key:
+--   - fines_pkey: PRIMARY KEY (id)
+--
+-- Unique Constraints:
+--   - None
+--
+-- Foreign Keys:
+--   - fines_transaction_id_fkey:
+--       FOREIGN KEY (transaction_id) REFERENCES borrow_transactions(id)
+--       ON UPDATE NO ACTION | ON DELETE NO ACTION
+--
+-- Indexes:
+--   - fines_pkey (btree, id, UNIQUE)

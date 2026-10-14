@@ -1,0 +1,26 @@
+
+# Dependencies
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+
+# Database backups
+*.dump
+*.backup
+smartlib_backup*.sql
+
+# Local logs
+*.log
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
